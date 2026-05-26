@@ -2,64 +2,65 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>IDA TV | Служба поддержки</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background-color: #f8fafc; font-family: 'Inter', sans-serif; }
         .glass { background: white; border: 1px solid #e2e8f0; }
         #rulesModal { display: none; position: fixed; inset: 0; z-index: 50; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); }
+        /* Адаптивная высота окна сообщений */
+        #msgWindow { height: 60vh; } 
     </style>
 </head>
-<body class="min-h-screen flex items-center justify-center p-4">
+<body class="min-h-screen flex items-center justify-center p-2 sm:p-4">
 
     <div id="rulesModal" class="flex items-center justify-center p-4">
-        <div class="bg-white p-8 rounded-3xl shadow-2xl max-w-sm w-full">
-            <h2 class="text-xl font-bold mb-4 text-slate-900 text-center">Правила чата IDA TV</h2>
+        <div class="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-sm">
+            <h2 class="text-xl font-bold mb-4 text-center">Правила IDA TV</h2>
             <ul class="text-sm text-slate-600 space-y-2 mb-6 list-disc pl-4">
-                <li>Будьте вежливы с оператором.</li>
-                <li>Запрещено использование мата и спам.</li>
-                <li>Время ответа поддержки: до 2-х часов.</li>
+                <li>Будьте вежливы.</li>
                 <li>Один вопрос — одно сообщение.</li>
+                <li>Ответ до 2-х часов.</li>
             </ul>
-            <button onclick="confirmRules()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition">Я принимаю правила</button>
+            <button onclick="confirmRules()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold">Принимаю</button>
         </div>
     </div>
 
-    <div id="authScreen" class="glass p-8 rounded-3xl shadow-xl max-w-sm w-full">
-        <h2 class="text-2xl font-bold mb-6 text-center text-slate-900">IDA TV | Вход</h2>
+    <div id="authScreen" class="glass p-6 rounded-3xl shadow-xl w-full max-w-sm">
+        <h2 class="text-xl font-bold mb-6 text-center">IDA TV | Вход</h2>
         <form id="regForm" class="space-y-4">
-            <input type="text" id="name" placeholder="Имя и Фамилия" required class="w-full p-3 rounded-xl bg-slate-50 border border-slate-200">
-            <input type="tel" id="phone" placeholder="Номер телефона" required class="w-full p-3 rounded-xl bg-slate-50 border border-slate-200">
-            <input type="password" id="password" placeholder="Пароль" required class="w-full p-3 rounded-xl bg-slate-50 border border-slate-200">
-            <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition">Войти</button>
+            <input type="text" id="name" placeholder="Имя" required class="w-full p-3 rounded-xl bg-slate-50 border">
+            <input type="tel" id="phone" placeholder="Телефон" required class="w-full p-3 rounded-xl bg-slate-50 border">
+            <input type="password" id="password" placeholder="Пароль" required class="w-full p-3 rounded-xl bg-slate-50 border">
+            <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold">Войти</button>
         </form>
     </div>
 
-    <div id="chatScreen" class="hidden glass p-6 rounded-3xl shadow-xl max-w-lg w-full">
-        <div class="flex justify-between items-center mb-6">
-            <h1 class="text-xl font-bold">IDA TV | Чат</h1>
-            <button onclick="logout()" class="text-xs text-red-500 hover:underline">Выйти</button>
+    <div id="chatScreen" class="hidden glass p-4 sm:p-6 rounded-3xl shadow-xl w-full max-w-lg">
+        <div class="flex justify-between items-center mb-4">
+            <h1 class="font-bold">IDA TV | Чат</h1>
+            <button onclick="logout()" class="text-xs text-red-500">Выйти</button>
         </div>
         
-        <div id="msgWindow" class="h-64 overflow-y-auto mb-4 p-4 border border-slate-100 rounded-2xl bg-slate-50 space-y-3">
+        <div id="msgWindow" class="overflow-y-auto mb-4 p-4 border rounded-2xl bg-slate-50 space-y-3">
             <div class="text-xs text-slate-400 text-center">История диалога</div>
         </div>
 
         <form id="sendForm" class="flex flex-col gap-2">
             <div class="flex gap-2 relative">
                 <button type="button" onclick="toggleEmojiPicker()" class="p-2 text-xl hover:bg-slate-200 rounded-xl">😊</button>
-                <div id="emojiPicker" class="hidden absolute bottom-14 left-0 bg-white border border-slate-200 p-2 rounded-xl shadow-lg grid grid-cols-5 gap-1">
+                <div id="emojiPicker" class="hidden absolute bottom-14 left-0 bg-white border p-2 rounded-xl shadow-lg grid grid-cols-5 gap-1">
                     <button type="button" onclick="addEmoji('😊')">😊</button>
                     <button type="button" onclick="addEmoji('👍')">👍</button>
                     <button type="button" onclick="addEmoji('❤️')">❤️</button>
                     <button type="button" onclick="addEmoji('🚀')">🚀</button>
                     <button type="button" onclick="addEmoji('✅')">✅</button>
                 </div>
-                <input type="text" id="message" required placeholder="Ваш вопрос..." class="flex-1 p-3 rounded-xl bg-slate-100 border-none outline-none">
-                <button type="submit" class="bg-blue-600 text-white px-6 rounded-xl font-bold hover:bg-blue-700">Отправить</button>
+                <input type="text" id="message" required placeholder="Ваш вопрос..." class="flex-1 p-3 rounded-xl bg-slate-100 outline-none">
+                <button type="submit" class="bg-blue-600 text-white px-4 rounded-xl font-bold">Отпр.</button>
             </div>
-            <div id="waitMsg" class="hidden text-xs text-orange-500 font-medium pl-2 italic">Ожидайте ответа...</div>
+            <div id="waitMsg" class="hidden text-xs text-orange-500 italic">Ожидайте ответа...</div>
         </form>
     </div>
 
@@ -83,7 +84,7 @@
         function startChat() {
             document.getElementById('authScreen').classList.add('hidden');
             document.getElementById('chatScreen').classList.remove('hidden');
-            setInterval(checkUpdates, 5000);
+            setInterval(checkUpdates, 3000); // Чаще проверяем
         }
 
         function logout() { localStorage.clear(); location.reload(); }
@@ -92,19 +93,13 @@
             const input = document.getElementById('message');
             input.value += emoji;
             document.getElementById('emojiPicker').classList.add('hidden');
-            input.focus();
-        }
-
-        function getFormattedTime() {
-            const now = new Date();
-            return now.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' }) + " в " + now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
         }
 
         function appendMessage(text, isUser) {
             const msgDiv = document.createElement('div');
             msgDiv.className = isUser ? "text-right bg-blue-600 text-white p-3 rounded-xl ml-10 text-sm" : 
                                        "text-left bg-gray-200 text-gray-800 p-3 rounded-xl mr-10 text-sm";
-            msgDiv.innerHTML = `<div>${text}</div><div class="text-[10px] opacity-70 mt-1">${getFormattedTime()}</div>`;
+            msgDiv.innerHTML = `<div>${text}</div>`;
             document.getElementById('msgWindow').appendChild(msgDiv);
             document.getElementById('msgWindow').scrollTop = document.getElementById('msgWindow').scrollHeight;
         }
@@ -113,30 +108,16 @@
             e.preventDefault();
             const text = document.getElementById('message').value;
             const userName = localStorage.getItem('user');
-            document.getElementById('waitMsg').classList.remove('hidden');
             
             fetch("https://api.telegram.org/bot" + BOT_TOKEN + "/sendMessage", {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ 
-                    chat_id: '1084236547', 
-                    text: "[" + userName + "] " + text 
-                })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.ok) {
+                body: JSON.stringify({ chat_id: '1084236547', text: "[" + userName + "] " + text })
+            }).then(res => res.json()).then(data => {
+                if(data.ok) {
                     appendMessage(text, true);
                     document.getElementById('message').value = '';
-                    document.getElementById('waitMsg').classList.add('hidden');
-                } else {
-                    alert("Ошибка отправки: " + data.description);
-                    document.getElementById('waitMsg').classList.add('hidden');
                 }
-            })
-            .catch(err => {
-                alert("Ошибка сети. Проверьте интернет.");
-                document.getElementById('waitMsg').classList.add('hidden');
             });
         };
 
@@ -144,22 +125,16 @@
             fetch("https://api.telegram.org/bot" + BOT_TOKEN + "/getUpdates")
             .then(res => res.json())
             .then(data => {
-                if (data.ok && data.result) {
+                if (data.result) {
                     const userName = localStorage.getItem('user');
                     data.result.forEach(item => {
                         const msg = item.message;
-                        if (msg && msg.text && msg.message_id > lastMessageId) {
-                            const txt = msg.text.toLowerCase();
-                            
-                            if (txt === "/clear") {
-                                document.getElementById('msgWindow').innerHTML = '<div class="text-xs text-slate-400 text-center">История очищена</div>';
-                            } else if (txt === "/ban") {
-                                logout();
-                            } else if (msg.text.includes("[" + userName + "]")) {
-                                const cleanText = msg.text.replace("[" + userName + "]", "").trim();
-                                appendMessage("Поддержка: " + cleanText, false);
+                        if (msg && msg.message_id > lastMessageId) {
+                            lastMessageId = msg.message_id; // Всегда обновляем ID
+                            if (msg.text?.includes("[" + userName + "]")) {
+                                appendMessage("Поддержка: " + msg.text.replace("[" + userName + "]", "").trim(), false);
+                                document.getElementById('waitMsg').classList.add('hidden');
                             }
-                            lastMessageId = msg.message_id;
                         }
                     });
                 }
