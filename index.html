@@ -20,6 +20,9 @@
             <input type="password" id="password" placeholder="Пароль" required class="w-full p-3 rounded-xl bg-slate-50 border border-slate-200">
             <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition">Войти</button>
         </form>
+        <div class="mt-6 text-[11px] text-slate-500 text-center border-t pt-4">
+            Нажимая «Войти», вы принимаете <b>Правила:</b> соблюдайте вежливость, не спамьте. Ожидание ответа до 2-х часов.
+        </div>
     </div>
 
     <div id="chatScreen" class="hidden glass p-6 rounded-3xl shadow-xl max-w-lg w-full">
@@ -74,7 +77,8 @@
             setInterval(checkUpdates, 5000);
         }
 
-        // Работа со смайликами
+        function logout() { localStorage.clear(); location.reload(); }
+
         function toggleEmojiPicker() { document.getElementById('emojiPicker').classList.toggle('hidden'); }
         function addEmoji(emoji) {
             const input = document.getElementById('message');
@@ -85,8 +89,7 @@
 
         function getFormattedTime() {
             const now = new Date();
-            return now.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' }) + 
-                   " в " + now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+            return now.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' }) + " в " + now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
         }
 
         function appendMessage(text, isUser) {
@@ -122,15 +125,22 @@
                     data.result.forEach(item => {
                         const msg = item.message;
                         if (msg && msg.text && msg.message_id > lastMessageId) {
-                            appendMessage("Поддержка: " + msg.text, false);
-                            document.getElementById('waitMsg').classList.add('hidden');
+                            const txt = msg.text.toLowerCase();
+                            
+                            if (txt === "/clear") {
+                                document.getElementById('msgWindow').innerHTML = '<div class="text-xs text-slate-400 text-center">История очищена</div>';
+                            } else if (txt === "/ban") {
+                                logout();
+                            } else {
+                                appendMessage("Поддержка: " + msg.text, false);
+                                document.getElementById('waitMsg').classList.add('hidden');
+                            }
                             lastMessageId = msg.message_id;
                         }
                     });
                 }
             });
         }
-        function logout() { localStorage.clear(); location.reload(); }
     </script>
 </body>
 </html>
