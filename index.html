@@ -65,7 +65,6 @@
 
         if(localStorage.getItem('user')) { startChat(); }
 
-        // Добавлено подтверждение правил
         document.getElementById('regForm').onsubmit = (e) => {
             e.preventDefault();
             if(confirm("Вы подтверждаете, что ознакомились с правилами чата и согласны их соблюдать?")) {
@@ -109,10 +108,11 @@
             const userName = localStorage.getItem('user');
             document.getElementById('waitMsg').classList.remove('hidden');
             
+            // Отправляем с пометкой имени пользователя для фильтрации
             fetch("https://api.telegram.org/bot" + BOT_TOKEN + "/sendMessage", {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ chat_id: '1084236547', text: "Клиент " + userName + ": " + text })
+                body: JSON.stringify({ chat_id: '1084236547', text: "[" + userName + "] " + text })
             }).then(() => {
                 appendMessage(text, true);
                 document.getElementById('message').value = '';
@@ -124,19 +124,26 @@
             .then(res => res.json())
             .then(data => {
                 if (data.result) {
+                    const userName = localStorage.getItem('user');
                     data.result.forEach(item => {
                         const msg = item.message;
                         if (msg && msg.text && msg.message_id > lastMessageId) {
                             const txt = msg.text.toLowerCase();
+                            
+                            // Админские команды (без фильтра)
                             if (txt === "/clear") {
                                 document.getElementById('msgWindow').innerHTML = '<div class="text-xs text-slate-400 text-center">История очищена</div>';
+                                lastMessageId = msg.message_id;
                             } else if (txt === "/ban") {
                                 logout();
-                            } else {
-                                appendMessage("Поддержка: " + msg.text, false);
+                            } 
+                            // Фильтр: показываем сообщение, если оно адресовано конкретному пользователю
+                            else if (msg.text.includes("[" + userName + "]")) {
+                                const cleanText = msg.text.replace("[" + userName + "]", "").trim();
+                                appendMessage("Поддержка: " + cleanText, false);
                                 document.getElementById('waitMsg').classList.add('hidden');
+                                lastMessageId = msg.message_id;
                             }
-                            lastMessageId = msg.message_id;
                         }
                     });
                 }
