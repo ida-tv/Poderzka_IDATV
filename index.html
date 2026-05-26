@@ -25,21 +25,12 @@
     <div id="chatScreen" class="hidden glass p-6 rounded-3xl shadow-xl max-w-lg w-full">
         <div class="flex justify-between items-center mb-6">
             <h1 class="text-xl font-bold">IDA TV | Чат</h1>
-            <div class="flex gap-2">
-                <button onclick="checkUpdates()" class="text-xs text-blue-500 hover:underline font-bold">Обновить</button>
-                <button onclick="logout()" class="text-xs text-red-500 hover:underline">Выйти</button>
-            </div>
+            <button onclick="logout()" class="text-xs text-red-500 hover:underline">Выйти</button>
         </div>
 
         <div class="flex items-center gap-2 mb-4 text-xs font-semibold">
             <span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span></span>
             <span class="text-green-600">Админ в сети</span>
-        </div>
-
-        <div class="bg-blue-50 p-4 rounded-2xl mb-6 text-sm text-blue-800 border border-blue-100">
-            <p>🕒 <b>Режим:</b> 10:00 – 21:00</p>
-            <p>⚡ <b>Ожидание:</b> до 2 часов</p>
-            <p>📧 <b>Email:</b> setuptv@mail.ee</p>
         </div>
 
         <div id="msgWindow" class="h-64 overflow-y-auto mb-4 p-4 border border-slate-100 rounded-2xl bg-slate-50 space-y-3">
@@ -59,20 +50,22 @@
 
     <script>
         const BOT_TOKEN = '8962279504:AAH2tTlpSx9q1OLsPpBcsVLyRZfHepLNITQ';
-        const CHAT_ID = '1084236547';
         let lastMessageId = 0;
 
-        if(localStorage.getItem('user')) { showChat(); }
+        // Если пользователь уже входил
+        if(localStorage.getItem('user')) { startChat(); }
 
         document.getElementById('regForm').onsubmit = (e) => {
             e.preventDefault();
             localStorage.setItem('user', document.getElementById('name').value);
-            showChat();
+            startChat();
         };
 
-        function showChat() {
+        function startChat() {
             document.getElementById('authScreen').classList.add('hidden');
             document.getElementById('chatScreen').classList.remove('hidden');
+            // Запускаем авто-проверку сообщений каждые 5 секунд
+            setInterval(checkUpdates, 5000);
         }
 
         function logout() { localStorage.clear(); location.reload(); }
@@ -91,14 +84,13 @@
             e.preventDefault();
             const text = document.getElementById('message').value;
             const userName = localStorage.getItem('user');
-            const waitMsg = document.getElementById('waitMsg');
             
-            waitMsg.classList.remove('hidden');
+            document.getElementById('waitMsg').classList.remove('hidden');
             
             fetch("https://api.telegram.org/bot" + BOT_TOKEN + "/sendMessage", {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ chat_id: CHAT_ID, text: "Клиент " + userName + ": " + text })
+                body: JSON.stringify({ chat_id: '1084236547', text: "Клиент " + userName + ": " + text })
             }).then(() => {
                 appendMessage(text, true);
                 document.getElementById('message').value = '';
@@ -113,10 +105,9 @@
                     data.result.forEach(item => {
                         const msg = item.message;
                         if (msg && msg.text && msg.message_id > lastMessageId) {
-                            if (msg.from.id.toString() !== CHAT_ID) {
-                                appendMessage("Поддержка: " + msg.text, false);
-                                document.getElementById('waitMsg').classList.add('hidden');
-                            }
+                            // Выводим ответ (если это не то, что отправил сам клиент)
+                            appendMessage("Поддержка: " + msg.text, false);
+                            document.getElementById('waitMsg').classList.add('hidden');
                             lastMessageId = msg.message_id;
                         }
                     });
