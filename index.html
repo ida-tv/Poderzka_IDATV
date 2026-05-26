@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IDA TV | Служба поддержки</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #f8fafc; font-family: 'Inter', sans-serif; }
+        .glass { background: white; border: 1px solid #e2e8f0; }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <div id="authScreen" class="glass p-8 rounded-3xl shadow-xl max-w-sm w-full">
+        <h2 class="text-2xl font-bold mb-6 text-center text-slate-900">IDA TV | Вход</h2>
+        <form id="regForm" class="space-y-4">
+            <input type="text" id="name" placeholder="Имя и Фамилия" required class="w-full p-3 rounded-xl bg-slate-50 border border-slate-200">
+            <input type="tel" id="phone" placeholder="Номер телефона" required class="w-full p-3 rounded-xl bg-slate-50 border border-slate-200">
+            <input type="password" id="password" placeholder="Пароль" required class="w-full p-3 rounded-xl bg-slate-50 border border-slate-200">
+            <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition">Войти</button>
+        </form>
+    </div>
+
+    <div id="chatScreen" class="hidden glass p-6 rounded-3xl shadow-xl max-w-lg w-full">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-xl font-bold">IDA TV | Чат</h1>
+            <div class="flex gap-2">
+                <button onclick="checkUpdates()" class="text-xs text-blue-500 hover:underline font-bold">Обновить</button>
+                <button onclick="logout()" class="text-xs text-red-500 hover:underline">Выйти</button>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2 mb-4 text-xs font-semibold">
+            <span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span></span>
+            <span class="text-green-600">Админ в сети</span>
+        </div>
+
+        <div class="bg-blue-50 p-4 rounded-2xl mb-6 text-sm text-blue-800 border border-blue-100">
+            <p>🕒 <b>Режим:</b> 10:00 – 21:00</p>
+            <p>⚡ <b>Ожидание:</b> до 2 часов</p>
+            <p>📧 <b>Email:</b> setuptv@mail.ee</p>
+        </div>
+
+        <div id="msgWindow" class="h-64 overflow-y-auto mb-4 p-4 border border-slate-100 rounded-2xl bg-slate-50 space-y-3">
+            <div class="text-xs text-slate-400 text-center">История диалога</div>
+        </div>
+
+        <form id="sendForm" class="flex flex-col gap-2">
+            <div class="flex gap-2">
+                <input type="text" id="message" required placeholder="Ваш вопрос..." class="flex-1 p-3 rounded-xl bg-slate-100 border-none outline-none">
+                <button type="submit" class="bg-blue-600 text-white px-6 rounded-xl font-bold hover:bg-blue-700">Отправить</button>
+            </div>
+            <div id="waitMsg" class="hidden text-xs text-orange-500 font-medium pl-2 italic">
+                Ожидайте ответа, вам ответят как будет возможность.
+            </div>
+        </form>
+    </div>
+
+    <script>
+        const BOT_TOKEN = '8962279504:AAH2tTlpSx9q1OLsPpBcsVLyRZfHepLNITQ';
+        const CHAT_ID = '1084236547';
+        let lastMessageId = 0;
+
+        if(localStorage.getItem('user')) { showChat(); }
+
+        document.getElementById('regForm').onsubmit = (e) => {
+            e.preventDefault();
+            localStorage.setItem('user', document.getElementById('name').value);
+            showChat();
+        };
+
+        function showChat() {
+            document.getElementById('authScreen').classList.add('hidden');
+            document.getElementById('chatScreen').classList.remove('hidden');
+        }
+
+        function logout() { localStorage.clear(); location.reload(); }
+
+        function appendMessage(text, isUser) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = isUser ? 
+                "text-right bg-blue-600 text-white p-2 rounded-xl ml-10 text-sm" : 
+                "text-left bg-gray-200 text-gray-800 p-2 rounded-xl mr-10 text-sm";
+            msgDiv.innerText = text;
+            document.getElementById('msgWindow').appendChild(msgDiv);
+            document.getElementById('msgWindow').scrollTop = document.getElementById('msgWindow').scrollHeight;
+        }
+
+        document.getElementById('sendForm').onsubmit = (e) => {
+            e.preventDefault();
+            const text = document.getElementById('message').value;
+            const userName = localStorage.getItem('user');
+            const waitMsg = document.getElementById('waitMsg');
+            
+            waitMsg.classList.remove('hidden');
+            
+            fetch("https://api.telegram.org/bot" + BOT_TOKEN + "/sendMessage", {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ chat_id: CHAT_ID, text: "Клиент " + userName + ": " + text })
+            }).then(() => {
+                appendMessage(text, true);
+                document.getElementById('message').value = '';
+            });
+        };
+
+        function checkUpdates() {
+            fetch("https://api.telegram.org/bot" + BOT_TOKEN + "/getUpdates")
+            .then(res => res.json())
+            .then(data => {
+                if (data.result) {
+                    data.result.forEach(item => {
+                        const msg = item.message;
+                        if (msg && msg.text && msg.message_id > lastMessageId) {
+                            if (msg.from.id.toString() !== CHAT_ID) {
+                                appendMessage("Поддержка: " + msg.text, false);
+                                document.getElementById('waitMsg').classList.add('hidden');
+                            }
+                            lastMessageId = msg.message_id;
+                        }
+                    });
+                }
+            });
+        }
+    </script>
+</body>
+</html>
