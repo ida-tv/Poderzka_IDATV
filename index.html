@@ -21,7 +21,7 @@
             <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition">Войти</button>
         </form>
         <div class="mt-6 text-[11px] text-slate-500 text-center border-t pt-4">
-            Нажимая «Войти», вы принимаете <b>Правила:</b> соблюдайте вежливость, не спамьте. Ожидание ответа до 2-х часов.
+            Нажимая «Войти», вы принимаете <b>Правила:</b> вежливость, без спама. Ответ до 2-х часов.
         </div>
     </div>
 
@@ -65,10 +65,13 @@
 
         if(localStorage.getItem('user')) { startChat(); }
 
+        // Добавлено подтверждение правил
         document.getElementById('regForm').onsubmit = (e) => {
             e.preventDefault();
-            localStorage.setItem('user', document.getElementById('name').value);
-            startChat();
+            if(confirm("Вы подтверждаете, что ознакомились с правилами чата и согласны их соблюдать?")) {
+                localStorage.setItem('user', document.getElementById('name').value);
+                startChat();
+            }
         };
 
         function startChat() {
@@ -78,7 +81,6 @@
         }
 
         function logout() { localStorage.clear(); location.reload(); }
-
         function toggleEmojiPicker() { document.getElementById('emojiPicker').classList.toggle('hidden'); }
         function addEmoji(emoji) {
             const input = document.getElementById('message');
@@ -126,7 +128,6 @@
                         const msg = item.message;
                         if (msg && msg.text && msg.message_id > lastMessageId) {
                             const txt = msg.text.toLowerCase();
-                            
                             if (txt === "/clear") {
                                 document.getElementById('msgWindow').innerHTML = '<div class="text-xs text-slate-400 text-center">История очищена</div>';
                             } else if (txt === "/ban") {
