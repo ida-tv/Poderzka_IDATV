@@ -8,7 +8,6 @@
     <style>
         body { background-color: #f8fafc; font-family: 'Inter', sans-serif; }
         .glass { background: white; border: 1px solid #e2e8f0; }
-        /* Стили для модального окна */
         #rulesModal { display: none; position: fixed; inset: 0; z-index: 50; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); }
     </style>
 </head>
@@ -42,9 +41,11 @@
             <h1 class="text-xl font-bold">IDA TV | Чат</h1>
             <button onclick="logout()" class="text-xs text-red-500 hover:underline">Выйти</button>
         </div>
+        
         <div id="msgWindow" class="h-64 overflow-y-auto mb-4 p-4 border border-slate-100 rounded-2xl bg-slate-50 space-y-3">
             <div class="text-xs text-slate-400 text-center">История диалога</div>
         </div>
+
         <form id="sendForm" class="flex flex-col gap-2">
             <div class="flex gap-2 relative">
                 <button type="button" onclick="toggleEmojiPicker()" class="p-2 text-xl hover:bg-slate-200 rounded-xl">😊</button>
@@ -68,7 +69,6 @@
 
         if(localStorage.getItem('user')) { startChat(); }
 
-        // Показ модального окна вместо стандартного confirm
         document.getElementById('regForm').onsubmit = (e) => {
             e.preventDefault();
             document.getElementById('rulesModal').style.display = 'flex';
@@ -118,10 +118,25 @@
             fetch("https://api.telegram.org/bot" + BOT_TOKEN + "/sendMessage", {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ chat_id: '1084236547', text: "[" + userName + "] " + text })
-            }).then(() => {
-                appendMessage(text, true);
-                document.getElementById('message').value = '';
+                body: JSON.stringify({ 
+                    chat_id: '1084236547', 
+                    text: "[" + userName + "] " + text 
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.ok) {
+                    appendMessage(text, true);
+                    document.getElementById('message').value = '';
+                    document.getElementById('waitMsg').classList.add('hidden');
+                } else {
+                    alert("Ошибка отправки: " + data.description);
+                    document.getElementById('waitMsg').classList.add('hidden');
+                }
+            })
+            .catch(err => {
+                alert("Ошибка сети. Проверьте интернет.");
+                document.getElementById('waitMsg').classList.add('hidden');
             });
         };
 
@@ -129,23 +144,22 @@
             fetch("https://api.telegram.org/bot" + BOT_TOKEN + "/getUpdates")
             .then(res => res.json())
             .then(data => {
-                if (data.result) {
+                if (data.ok && data.result) {
                     const userName = localStorage.getItem('user');
                     data.result.forEach(item => {
                         const msg = item.message;
                         if (msg && msg.text && msg.message_id > lastMessageId) {
                             const txt = msg.text.toLowerCase();
+                            
                             if (txt === "/clear") {
                                 document.getElementById('msgWindow').innerHTML = '<div class="text-xs text-slate-400 text-center">История очищена</div>';
-                                lastMessageId = msg.message_id;
                             } else if (txt === "/ban") {
                                 logout();
                             } else if (msg.text.includes("[" + userName + "]")) {
                                 const cleanText = msg.text.replace("[" + userName + "]", "").trim();
                                 appendMessage("Поддержка: " + cleanText, false);
-                                document.getElementById('waitMsg').classList.add('hidden');
-                                lastMessageId = msg.message_id;
                             }
+                            lastMessageId = msg.message_id;
                         }
                     });
                 }
