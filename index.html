@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background-color: #f1f5f9; font-family: sans-serif; }
-        .chat-height { height: calc(100vh - 220px); }
+        .chat-height { height: calc(100vh - 250px); }
     </style>
 </head>
 <body class="p-2">
@@ -15,11 +15,6 @@
     <div id="rulesModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
         <div class="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-sm">
             <h2 class="text-xl font-bold mb-4 text-center">Правила IDA TV</h2>
-            <ul class="text-sm text-slate-600 space-y-2 mb-6 list-disc pl-4">
-                <li>Будьте вежливы.</li>
-                <li>Не спамьте.</li>
-                <li>Ответ в течение 2-х часов.</li>
-            </ul>
             <button onclick="confirmRules()" class="w-full bg-blue-600 text-white py-3 rounded-2xl font-bold">Я принимаю правила</button>
         </div>
     </div>
@@ -36,9 +31,7 @@
         <div class="flex justify-between items-center mb-4 border-b pb-2">
             <div>
                 <h1 class="font-bold text-lg">IDA TV</h1>
-                <div class="flex items-center text-xs text-green-600 font-medium">
-                    <span class="w-2 h-2 bg-green-500 rounded-full mr-1 animate-pulse"></span> Админ в сети
-                </div>
+                <div class="flex items-center text-xs text-green-600 font-medium"><span class="w-2 h-2 bg-green-500 rounded-full mr-1 animate-pulse"></span> Админ в сети</div>
             </div>
             <button onclick="logout()" class="text-xs text-red-500 underline">Выйти</button>
         </div>
@@ -48,8 +41,12 @@
         <form id="sendForm" class="space-y-2">
             <div id="waitMsg" class="hidden text-[11px] text-orange-500 italic px-2">Ожидайте ответа, вам ответят как будет возможность...</div>
             <div class="flex gap-2">
+                <button type="button" onclick="toggleEmoji()" class="text-2xl">😊</button>
                 <input type="text" id="message" required placeholder="Ваш вопрос..." class="flex-1 p-3 rounded-2xl bg-slate-100 outline-none">
                 <button type="submit" class="bg-blue-600 text-white px-5 rounded-2xl font-bold">></button>
+            </div>
+            <div id="emojiPicker" class="hidden grid grid-cols-5 gap-2 p-2 bg-slate-100 rounded-2xl">
+                <button type="button" onclick="addEmoji('😊')">😊</button> <button type="button" onclick="addEmoji('👍')">👍</button> <button type="button" onclick="addEmoji('❤️')">❤️</button> <button type="button" onclick="addEmoji('🚀')">🚀</button> <button type="button" onclick="addEmoji('✅')">✅</button>
             </div>
         </form>
     </div>
@@ -58,16 +55,12 @@
         const BOT_TOKEN = '8962279504:AAH2tTlpSx9q1OLsPpBcsVLyRZfHepLNITQ';
         let lastMessageId = localStorage.getItem('lastMsgId') || 0;
 
-        // Инициализация
         if(localStorage.getItem('user')) { startChat(); }
 
         document.getElementById('regForm').onsubmit = (e) => { e.preventDefault(); document.getElementById('rulesModal').classList.remove('hidden'); };
-        
-        function confirmRules() {
-            localStorage.setItem('user', document.getElementById('name').value);
-            document.getElementById('rulesModal').classList.add('hidden');
-            startChat();
-        }
+        function confirmRules() { localStorage.setItem('user', document.getElementById('name').value); document.getElementById('rulesModal').classList.add('hidden'); startChat(); }
+        function toggleEmoji() { document.getElementById('emojiPicker').classList.toggle('hidden'); }
+        function addEmoji(e) { document.getElementById('message').value += e; }
 
         function startChat() {
             document.getElementById('authScreen').classList.add('hidden');
@@ -76,25 +69,34 @@
             setInterval(checkUpdates, 3000);
         }
 
-        function loadMessages() {
-            const msgs = JSON.parse(localStorage.getItem('chatHistory') || '[]');
-            msgs.forEach(m => renderMessage(m.text, m.isUser));
+        function getTimestamp() {
+            const now = new Date();
+            return `${now.getDate().toString().padStart(2,'0')}.${(now.getMonth()+1).toString().padStart(2,'0')} в ${now.getHours()}:${now.getMinutes().toString().padStart(2,'0')}`;
         }
 
-        function saveMessage(text, isUser) {
+        function saveMessage(text, isUser, time) {
             const msgs = JSON.parse(localStorage.getItem('chatHistory') || '[]');
-            msgs.push({text, isUser});
+            msgs.push({text, isUser, time});
             localStorage.setItem('chatHistory', JSON.stringify(msgs));
-            renderMessage(text, isUser);
+            renderMessage(text, isUser, time);
         }
 
-        function renderMessage(text, isUser) {
+        function renderMessage(text, isUser, time) {
             const win = document.getElementById('msgWindow');
             const div = document.createElement('div');
             div.className = isUser ? "text-right" : "text-left";
-            div.innerHTML = `<span class="inline-block p-3 rounded-2xl text-sm ${isUser ? 'bg-blue-600 text-white' : 'bg-slate-200'}">${text}</span>`;
+            div.innerHTML = `
+                <div class="inline-block p-3 rounded-2xl text-sm ${isUser ? 'bg-blue-600 text-white' : 'bg-slate-200'}">
+                    ${text}
+                    <div class="text-[9px] opacity-70 mt-1">${time}</div>
+                </div>`;
             win.appendChild(div);
             win.scrollTop = win.scrollHeight;
+        }
+
+        function loadMessages() {
+            const msgs = JSON.parse(localStorage.getItem('chatHistory') || '[]');
+            msgs.forEach(m => renderMessage(m.text, m.isUser, m.time));
         }
 
         document.getElementById('sendForm').onsubmit = (e) => {
@@ -107,7 +109,7 @@
                 method: 'POST', headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ chat_id: '1084236547', text: "[" + userName + "] " + text })
             }).then(() => {
-                saveMessage(text, true);
+                saveMessage(text, true, getTimestamp());
                 document.getElementById('message').value = '';
             });
         };
@@ -115,21 +117,21 @@
         function checkUpdates() {
             fetch("https://api.telegram.org/bot" + BOT_TOKEN + "/getUpdates")
             .then(r => r.json()).then(data => {
+                if(!data.result) return;
                 data.result.forEach(item => {
-                    if (item.message.message_id > lastMessageId) {
+                    if (item.message && item.message.text && item.message.message_id > lastMessageId) {
                         lastMessageId = item.message.message_id;
                         localStorage.setItem('lastMsgId', lastMessageId);
                         const userName = localStorage.getItem('user');
                         if (item.message.text.includes("[" + userName + "]")) {
                             const ans = item.message.text.replace("[" + userName + "]", "").trim();
-                            saveMessage("Поддержка: " + ans, false);
+                            saveMessage("Поддержка: " + ans, false, getTimestamp());
                             document.getElementById('waitMsg').classList.add('hidden');
                         }
                     }
                 });
             });
         }
-
         function logout() { localStorage.clear(); location.reload(); }
     </script>
 </body>
