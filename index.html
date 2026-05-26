@@ -8,21 +8,22 @@
     <style>
         body { background-color: #f8fafc; font-family: 'Inter', sans-serif; }
         .glass { background: white; border: 1px solid #e2e8f0; }
+        /* Стили для модального окна */
         #rulesModal { display: none; position: fixed; inset: 0; z-index: 50; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); }
     </style>
 </head>
 <body class="min-h-screen flex items-center justify-center p-4">
 
-    <div id="rulesModal" class="flex items-center justify-center">
-        <div class="bg-white p-8 rounded-3xl shadow-2xl max-w-sm w-full mx-4">
-            <h2 class="text-xl font-bold mb-4 text-slate-900">Правила чата</h2>
+    <div id="rulesModal" class="flex items-center justify-center p-4">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl max-w-sm w-full">
+            <h2 class="text-xl font-bold mb-4 text-slate-900 text-center">Правила чата IDA TV</h2>
             <ul class="text-sm text-slate-600 space-y-2 mb-6 list-disc pl-4">
-                <li>Будьте вежливы с поддержкой.</li>
-                <li>Запрещено отправлять спам.</li>
-                <li>Ожидание ответа до 2-х часов.</li>
-                <li>Используйте только конструктивные вопросы.</li>
+                <li>Будьте вежливы с оператором.</li>
+                <li>Запрещено использование мата и спам.</li>
+                <li>Время ответа поддержки: до 2-х часов.</li>
+                <li>Один вопрос — одно сообщение.</li>
             </ul>
-            <button onclick="confirmRules()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700">Я принимаю правила</button>
+            <button onclick="confirmRules()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition">Я принимаю правила</button>
         </div>
     </div>
 
@@ -45,11 +46,19 @@
             <div class="text-xs text-slate-400 text-center">История диалога</div>
         </div>
         <form id="sendForm" class="flex flex-col gap-2">
-            <div class="flex gap-2">
+            <div class="flex gap-2 relative">
+                <button type="button" onclick="toggleEmojiPicker()" class="p-2 text-xl hover:bg-slate-200 rounded-xl">😊</button>
+                <div id="emojiPicker" class="hidden absolute bottom-14 left-0 bg-white border border-slate-200 p-2 rounded-xl shadow-lg grid grid-cols-5 gap-1">
+                    <button type="button" onclick="addEmoji('😊')">😊</button>
+                    <button type="button" onclick="addEmoji('👍')">👍</button>
+                    <button type="button" onclick="addEmoji('❤️')">❤️</button>
+                    <button type="button" onclick="addEmoji('🚀')">🚀</button>
+                    <button type="button" onclick="addEmoji('✅')">✅</button>
+                </div>
                 <input type="text" id="message" required placeholder="Ваш вопрос..." class="flex-1 p-3 rounded-xl bg-slate-100 border-none outline-none">
-                <button type="submit" class="bg-blue-600 text-white px-6 rounded-xl font-bold">Отправить</button>
+                <button type="submit" class="bg-blue-600 text-white px-6 rounded-xl font-bold hover:bg-blue-700">Отправить</button>
             </div>
-            <div id="waitMsg" class="hidden text-xs text-orange-500 italic">Ожидайте ответа...</div>
+            <div id="waitMsg" class="hidden text-xs text-orange-500 font-medium pl-2 italic">Ожидайте ответа...</div>
         </form>
     </div>
 
@@ -59,7 +68,7 @@
 
         if(localStorage.getItem('user')) { startChat(); }
 
-        // Показ модального окна перед входом
+        // Показ модального окна вместо стандартного confirm
         document.getElementById('regForm').onsubmit = (e) => {
             e.preventDefault();
             document.getElementById('rulesModal').style.display = 'flex';
@@ -77,11 +86,71 @@
             setInterval(checkUpdates, 5000);
         }
 
-        // ... (остальные функции appendMessage, checkUpdates, sendForm остаются прежними)
         function logout() { localStorage.clear(); location.reload(); }
-        function appendMessage(text, isUser) { /* ... логика та же ... */ }
-        document.getElementById('sendForm').onsubmit = (e) => { e.preventDefault(); /* ... */ };
-        function checkUpdates() { /* ... фильтрация [Имя] ... */ }
+        function toggleEmojiPicker() { document.getElementById('emojiPicker').classList.toggle('hidden'); }
+        function addEmoji(emoji) {
+            const input = document.getElementById('message');
+            input.value += emoji;
+            document.getElementById('emojiPicker').classList.add('hidden');
+            input.focus();
+        }
+
+        function getFormattedTime() {
+            const now = new Date();
+            return now.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' }) + " в " + now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function appendMessage(text, isUser) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = isUser ? "text-right bg-blue-600 text-white p-3 rounded-xl ml-10 text-sm" : 
+                                       "text-left bg-gray-200 text-gray-800 p-3 rounded-xl mr-10 text-sm";
+            msgDiv.innerHTML = `<div>${text}</div><div class="text-[10px] opacity-70 mt-1">${getFormattedTime()}</div>`;
+            document.getElementById('msgWindow').appendChild(msgDiv);
+            document.getElementById('msgWindow').scrollTop = document.getElementById('msgWindow').scrollHeight;
+        }
+
+        document.getElementById('sendForm').onsubmit = (e) => {
+            e.preventDefault();
+            const text = document.getElementById('message').value;
+            const userName = localStorage.getItem('user');
+            document.getElementById('waitMsg').classList.remove('hidden');
+            
+            fetch("https://api.telegram.org/bot" + BOT_TOKEN + "/sendMessage", {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ chat_id: '1084236547', text: "[" + userName + "] " + text })
+            }).then(() => {
+                appendMessage(text, true);
+                document.getElementById('message').value = '';
+            });
+        };
+
+        function checkUpdates() {
+            fetch("https://api.telegram.org/bot" + BOT_TOKEN + "/getUpdates")
+            .then(res => res.json())
+            .then(data => {
+                if (data.result) {
+                    const userName = localStorage.getItem('user');
+                    data.result.forEach(item => {
+                        const msg = item.message;
+                        if (msg && msg.text && msg.message_id > lastMessageId) {
+                            const txt = msg.text.toLowerCase();
+                            if (txt === "/clear") {
+                                document.getElementById('msgWindow').innerHTML = '<div class="text-xs text-slate-400 text-center">История очищена</div>';
+                                lastMessageId = msg.message_id;
+                            } else if (txt === "/ban") {
+                                logout();
+                            } else if (msg.text.includes("[" + userName + "]")) {
+                                const cleanText = msg.text.replace("[" + userName + "]", "").trim();
+                                appendMessage("Поддержка: " + cleanText, false);
+                                document.getElementById('waitMsg').classList.add('hidden');
+                                lastMessageId = msg.message_id;
+                            }
+                        }
+                    });
+                }
+            });
+        }
     </script>
 </body>
 </html>
