@@ -38,7 +38,15 @@
         </div>
 
         <form id="sendForm" class="flex flex-col gap-2">
-            <div class="flex gap-2">
+            <div class="flex gap-2 relative">
+                <button type="button" onclick="toggleEmojiPicker()" class="p-2 text-xl hover:bg-slate-200 rounded-xl">😊</button>
+                <div id="emojiPicker" class="hidden absolute bottom-14 left-0 bg-white border border-slate-200 p-2 rounded-xl shadow-lg grid grid-cols-5 gap-1">
+                    <button type="button" onclick="addEmoji('😊')">😊</button>
+                    <button type="button" onclick="addEmoji('👍')">👍</button>
+                    <button type="button" onclick="addEmoji('❤️')">❤️</button>
+                    <button type="button" onclick="addEmoji('🚀')">🚀</button>
+                    <button type="button" onclick="addEmoji('✅')">✅</button>
+                </div>
                 <input type="text" id="message" required placeholder="Ваш вопрос..." class="flex-1 p-3 rounded-xl bg-slate-100 border-none outline-none">
                 <button type="submit" class="bg-blue-600 text-white px-6 rounded-xl font-bold hover:bg-blue-700">Отправить</button>
             </div>
@@ -52,7 +60,6 @@
         const BOT_TOKEN = '8962279504:AAH2tTlpSx9q1OLsPpBcsVLyRZfHepLNITQ';
         let lastMessageId = 0;
 
-        // Если пользователь уже входил
         if(localStorage.getItem('user')) { startChat(); }
 
         document.getElementById('regForm').onsubmit = (e) => {
@@ -64,18 +71,29 @@
         function startChat() {
             document.getElementById('authScreen').classList.add('hidden');
             document.getElementById('chatScreen').classList.remove('hidden');
-            // Запускаем авто-проверку сообщений каждые 5 секунд
             setInterval(checkUpdates, 5000);
         }
 
-        function logout() { localStorage.clear(); location.reload(); }
+        // Работа со смайликами
+        function toggleEmojiPicker() { document.getElementById('emojiPicker').classList.toggle('hidden'); }
+        function addEmoji(emoji) {
+            const input = document.getElementById('message');
+            input.value += emoji;
+            document.getElementById('emojiPicker').classList.add('hidden');
+            input.focus();
+        }
+
+        function getFormattedTime() {
+            const now = new Date();
+            return now.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' }) + 
+                   " в " + now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+        }
 
         function appendMessage(text, isUser) {
             const msgDiv = document.createElement('div');
-            msgDiv.className = isUser ? 
-                "text-right bg-blue-600 text-white p-2 rounded-xl ml-10 text-sm" : 
-                "text-left bg-gray-200 text-gray-800 p-2 rounded-xl mr-10 text-sm";
-            msgDiv.innerText = text;
+            msgDiv.className = isUser ? "text-right bg-blue-600 text-white p-3 rounded-xl ml-10 text-sm" : 
+                                       "text-left bg-gray-200 text-gray-800 p-3 rounded-xl mr-10 text-sm";
+            msgDiv.innerHTML = `<div>${text}</div><div class="text-[10px] opacity-70 mt-1">${getFormattedTime()}</div>`;
             document.getElementById('msgWindow').appendChild(msgDiv);
             document.getElementById('msgWindow').scrollTop = document.getElementById('msgWindow').scrollHeight;
         }
@@ -84,7 +102,6 @@
             e.preventDefault();
             const text = document.getElementById('message').value;
             const userName = localStorage.getItem('user');
-            
             document.getElementById('waitMsg').classList.remove('hidden');
             
             fetch("https://api.telegram.org/bot" + BOT_TOKEN + "/sendMessage", {
@@ -105,7 +122,6 @@
                     data.result.forEach(item => {
                         const msg = item.message;
                         if (msg && msg.text && msg.message_id > lastMessageId) {
-                            // Выводим ответ (если это не то, что отправил сам клиент)
                             appendMessage("Поддержка: " + msg.text, false);
                             document.getElementById('waitMsg').classList.add('hidden');
                             lastMessageId = msg.message_id;
@@ -114,6 +130,7 @@
                 }
             });
         }
+        function logout() { localStorage.clear(); location.reload(); }
     </script>
 </body>
 </html>
